@@ -1,0 +1,95 @@
+--
+--                              POK header
+-- 
+--  The following file is a part of the POK project. Any modification should
+--  be made according to the POK licence. You CANNOT use this file or a part 
+--  of a file for your own project.
+-- 
+--  For more information on the POK licence, please see our LICENCE FILE
+--
+--  Please follow the coding guidelines described in doc/CODING_GUIDELINES
+--
+--                                      Copyright (c) 2007-2009 POK team 
+--
+--  Created by julien on Thu Jan 15 23:34:13 2009 
+--
+
+
+package test
+public
+
+with Data_Model;
+with POK;
+with poklib;
+with ARINC653;
+
+data myint
+properties
+  Data_Model::Data_Representation => integer;
+end myint;
+
+virtual processor partition
+end partition;
+
+virtual processor implementation partition.impl
+properties
+   POK::Scheduler => RR;
+   POK::Additional_Features => (libc_stdio, console);
+end partition.impl;
+
+processor ppc
+end ppc;
+
+processor implementation ppc.impl
+subcomponents
+   part1 : virtual processor partition.impl;
+properties
+   POK::Architecture => x86;
+   POK::BSP => x86_qemu;
+   POK::Major_Frame => 1000 ms;
+   POK::Scheduler => static;
+   POK::Slots => (1000 ms);
+   POK::Slots_Allocation => (reference (part1));
+end ppc.impl;
+
+process myprocess1
+end myprocess1;
+
+process implementation myprocess1.impl
+subcomponents
+   thr1 : thread mythread1.impl;
+properties
+   POK::Needed_Memory_Size => 200 kbyte;
+end myprocess1.impl;
+
+thread mythread1
+properties
+  Priority => 1;
+end mythread1;
+
+thread implementation mythread1.impl
+calls 
+   call1 : { pspg : subprogram hello_part1;};
+properties
+   dispatch_protocol => periodic;
+   period            => 1000ms;
+end mythread1.impl;
+
+subprogram hello_part1
+properties
+   source_name => "user_send";
+   source_language => C;
+   POK::Source_Location => "../../../send.o";
+end hello_part1;
+
+system node
+end node;
+
+system implementation node.impl
+subcomponents
+   cpu   : processor ppc.impl;
+   part1 : process myprocess1.impl;
+properties
+   Actual_Processor_Binding => (reference (cpu.part1)) applies to part1;
+end node.impl;
+end test;
