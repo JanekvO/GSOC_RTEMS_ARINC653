@@ -11,6 +11,9 @@
 #include "config.h"
 #endif
 
+#define POK_NEEDS_ARINC653_PARTITION 1
+#define POK_NEEDS_ARINC653_PROCESS 1
+
 #include <rtems/test.h>
 
 #include <bsp.h> /* for device driver prototypes */
