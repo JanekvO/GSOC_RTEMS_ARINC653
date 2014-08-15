@@ -1,0 +1,9 @@
+diff -ur ./rtems-guest_clean/Makefile ./rtems-guest/Makefile
+--- ./rtems-guest_clean/Makefile	2014-08-12 03:57:44.759030000 +0200
++++ ./rtems-guest/Makefile	2014-07-29 03:52:44.114333000 +0200
+@@ -1,4 +1,4 @@
+-BUILD = --models=model.aadl --no-run
++BUILD = --models=model.aadl --no-run --arinc653
+ TESTS = compile-x86
+ 
+ include $(POK_PATH)/misc/mk/examples.mk

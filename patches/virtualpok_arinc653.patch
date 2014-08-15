@@ -1,0 +1,243 @@
+diff -ur ./virtualpok_clean/clock/ckinit.c ./virtualpok/clock/ckinit.c
+--- ./virtualpok_clean/clock/ckinit.c	2014-08-15 01:54:33.375102000 +0200
++++ ./virtualpok/clock/ckinit.c	2014-05-25 22:03:05.846456000 +0200
+@@ -27,7 +27,7 @@
+ #include <rtems/score/watchdog.h>
+ #include <rtems/score/timestamp.h>
+ #include <assert.h>
+-#include <rtems/score/virtualizationlayercpu.h>
++#include <virtualizationlayercpu.h>
+ #include <virtualizationlayerbsp.h>
+ 
+ 
+Only in ./virtualpok/include: virtualizationlayercpu.h
+Only in ./virtualpok: libpart.a
+diff -ur ./virtualpok_clean/Makefile.am ./virtualpok/Makefile.am
+--- ./virtualpok_clean/Makefile.am	2014-08-15 01:54:33.371102000 +0200
++++ ./virtualpok/Makefile.am	2014-08-15 19:11:08.781787000 +0200
+@@ -6,19 +6,33 @@
+ include $(top_srcdir)/../../bsp.am
+ 
+ include_bspdir = $(includedir)/bsp
++include_arinc653dir = $(includedir)/arinc653
+ 
+ dist_project_lib_DATA = bsp_specs
+ 
+ include_HEADERS = include/bsp.h
+ include_HEADERS += ../../shared/include/tm27.h
+ include_HEADERS += include/virtualizationlayerbsp.h
+-#include_HEADERS += include/virtualizationlayercpu.h
++include_HEADERS += include/virtualizationlayercpu.h
+ 
+ nodist_include_HEADERS = include/bspopts.h
+ nodist_include_bsp_HEADERS = ../../shared/include/bootcard.h
+ DISTCLEANFILES = include/bspopts.h
+ noinst_PROGRAMS =
+ 
++include_arinc653_HEADERS = $(POK_PATH)/libpok/include/arinc653/types.h
++include_arinc653_HEADERS += $(POK_PATH)/libpok/include/arinc653/process.h
++include_arinc653_HEADERS += $(POK_PATH)/libpok/include/arinc653/partition.h
++include_arinc653_HEADERS += $(POK_PATH)/libpok/include/arinc653/blackboard.h
++include_arinc653_HEADERS += $(POK_PATH)/libpok/include/arinc653/time.h
++include_arinc653_HEADERS += $(POK_PATH)/libpok/include/arinc653/process.h
++include_arinc653_HEADERS += $(POK_PATH)/libpok/include/arinc653/buffer.h
++include_arinc653_HEADERS += $(POK_PATH)/libpok/include/arinc653/error.h
++include_arinc653_HEADERS += $(POK_PATH)/libpok/include/arinc653/event.h
++include_arinc653_HEADERS += $(POK_PATH)/libpok/include/arinc653/queueing.h
++include_arinc653_HEADERS += $(POK_PATH)/libpok/include/arinc653/sampling.h
++include_arinc653_HEADERS += $(POK_PATH)/libpok/include/arinc653/semaphore.h
++
+ include_bsp_HEADERS  = irq/irq.h
+ include_bsp_HEADERS += ../../shared/include/irq-generic.h
+ #include_bsp_HEADERS  +=
+@@ -70,8 +84,10 @@
+ 	ar t libpart.a > libpart.list
+ 	sed -e "s/\.lo/\.o/g" libpart.list > libpart.o.list
+ 	ar x libpart.a
+-	rename .lo .o `cat libpart.list`
++#	rename .lo .o `cat libpart.list`
++	cat libpart.list | rename 's/.lo/.o/g'
+ 	ar q libbsp.a `cat libpart.o.list`
++	sed -i '/#include <types.h>/d' ../../../../../../virtualpok/lib/include/arinc653/types.h
+ #	ar cru libpokpart.a `cat libpart.o.list`
+ # rm `cat libpart.o.list` is optional as all files get overwritten with new
+ # ones by 'ar x'. But I think it's bad style to remove object files during 
+diff -ur ./virtualpok_clean/preinstall.am ./virtualpok/preinstall.am
+--- ./virtualpok_clean/preinstall.am	2014-08-15 01:54:33.379102000 +0200
++++ ./virtualpok/preinstall.am	2014-08-15 19:12:48.044129000 +0200
+@@ -5,14 +5,14 @@
+ 	$(AMPOLISH3) $(srcdir)/Makefile.am > $(srcdir)/preinstall.am
+ endif
+ 
+-PREINSTALL_DIRS =
+-DISTCLEANFILES += $(PREINSTALL_DIRS)
+-
+ all-local: $(TMPINSTALL_FILES)
+ 
+ TMPINSTALL_FILES =
+ CLEANFILES = $(TMPINSTALL_FILES)
+ 
++PREINSTALL_DIRS =
++DISTCLEANFILES += $(PREINSTALL_DIRS)
++
+ all-am: $(PREINSTALL_FILES)
+ 
+ PREINSTALL_FILES =
+@@ -33,6 +33,11 @@
+ 	@: > $(PROJECT_INCLUDE)/bsp/$(dirstamp)
+ PREINSTALL_DIRS += $(PROJECT_INCLUDE)/bsp/$(dirstamp)
+ 
++$(PROJECT_INCLUDE)/arinc653/$(dirstamp):
++	@$(MKDIR_P) $(PROJECT_INCLUDE)/arinc653
++	@: > $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++PREINSTALL_DIRS += $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++
+ $(PROJECT_LIB)/bsp_specs: bsp_specs $(PROJECT_LIB)/$(dirstamp)
+ 	$(INSTALL_DATA) $< $(PROJECT_LIB)/bsp_specs
+ PREINSTALL_FILES += $(PROJECT_LIB)/bsp_specs
+@@ -49,6 +54,10 @@
+ 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/virtualizationlayerbsp.h
+ PREINSTALL_FILES += $(PROJECT_INCLUDE)/virtualizationlayerbsp.h
+ 
++$(PROJECT_INCLUDE)/virtualizationlayercpu.h: include/virtualizationlayercpu.h $(PROJECT_INCLUDE)/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/virtualizationlayercpu.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/virtualizationlayercpu.h
++
+ $(PROJECT_INCLUDE)/bspopts.h: include/bspopts.h $(PROJECT_INCLUDE)/$(dirstamp)
+ 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bspopts.h
+ PREINSTALL_FILES += $(PROJECT_INCLUDE)/bspopts.h
+@@ -57,6 +66,54 @@
+ 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bsp/bootcard.h
+ PREINSTALL_FILES += $(PROJECT_INCLUDE)/bsp/bootcard.h
+ 
++$(PROJECT_INCLUDE)/arinc653/types.h: $(POK_PATH)/libpok/include/arinc653/types.h $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/arinc653/types.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/arinc653/types.h
++
++$(PROJECT_INCLUDE)/arinc653/process.h: $(POK_PATH)/libpok/include/arinc653/process.h $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/arinc653/process.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/arinc653/process.h
++
++$(PROJECT_INCLUDE)/arinc653/partition.h: $(POK_PATH)/libpok/include/arinc653/partition.h $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/arinc653/partition.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/arinc653/partition.h
++
++$(PROJECT_INCLUDE)/arinc653/blackboard.h: $(POK_PATH)/libpok/include/arinc653/blackboard.h $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/arinc653/blackboard.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/arinc653/blackboard.h
++
++$(PROJECT_INCLUDE)/arinc653/time.h: $(POK_PATH)/libpok/include/arinc653/time.h $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/arinc653/time.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/arinc653/time.h
++
++$(PROJECT_INCLUDE)/arinc653/process.h: $(POK_PATH)/libpok/include/arinc653/process.h $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/arinc653/process.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/arinc653/process.h
++
++$(PROJECT_INCLUDE)/arinc653/buffer.h: $(POK_PATH)/libpok/include/arinc653/buffer.h $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/arinc653/buffer.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/arinc653/buffer.h
++
++$(PROJECT_INCLUDE)/arinc653/error.h: $(POK_PATH)/libpok/include/arinc653/error.h $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/arinc653/error.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/arinc653/error.h
++
++$(PROJECT_INCLUDE)/arinc653/event.h: $(POK_PATH)/libpok/include/arinc653/event.h $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/arinc653/event.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/arinc653/event.h
++
++$(PROJECT_INCLUDE)/arinc653/queueing.h: $(POK_PATH)/libpok/include/arinc653/queueing.h $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/arinc653/queueing.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/arinc653/queueing.h
++
++$(PROJECT_INCLUDE)/arinc653/sampling.h: $(POK_PATH)/libpok/include/arinc653/sampling.h $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/arinc653/sampling.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/arinc653/sampling.h
++
++$(PROJECT_INCLUDE)/arinc653/semaphore.h: $(POK_PATH)/libpok/include/arinc653/semaphore.h $(PROJECT_INCLUDE)/arinc653/$(dirstamp)
++	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/arinc653/semaphore.h
++PREINSTALL_FILES += $(PROJECT_INCLUDE)/arinc653/semaphore.h
++
+ $(PROJECT_INCLUDE)/bsp/irq.h: irq/irq.h $(PROJECT_INCLUDE)/bsp/$(dirstamp)
+ 	$(INSTALL_DATA) $< $(PROJECT_INCLUDE)/bsp/irq.h
+ PREINSTALL_FILES += $(PROJECT_INCLUDE)/bsp/irq.h
+diff -ur ./virtualpok_clean/startup/bspstart.c ./virtualpok/startup/bspstart.c
+--- ./virtualpok_clean/startup/bspstart.c	2014-08-15 01:54:33.379102000 +0200
++++ ./virtualpok/startup/bspstart.c	2014-07-01 15:57:16.523567000 +0200
+@@ -34,8 +34,8 @@
+   _BSP_Virtual_Char_write( "Hello RTEMS World\n" );
+ 
+   // Initialize IRQ management 
+-  rtems_irq_mngt_init();
++  //rtems_irq_mngt_init();
+ 
+   // Register clock driver
+-  Clock_driver_install_handler();
++  //Clock_driver_install_handler();
+ }
+diff -ur ./virtualpok_clean/startup/linkcmds ./virtualpok/startup/linkcmds
+--- ./virtualpok_clean/startup/linkcmds	2014-08-15 01:54:33.379102000 +0200
++++ ./virtualpok/startup/linkcmds	2014-06-08 22:17:00.126366000 +0200
+@@ -75,7 +75,7 @@
+ 
+   } =0x90909090
+ 
+-  .robsdsets : {
++  .rtemsroset : {
+     /* for pre rtems-libbsd FreeBSD code */
+     __start_set_sysctl_set = .;
+     *(set_sysctl_*);
+@@ -83,21 +83,7 @@
+     *(set_domain_*);
+     *(set_pseudo_*);
+ 
+-    /* for rtems-libbsd FreeBSD code */
+-    _bsd__start_set_modmetadata_set = .;
+-    *(_bsd_set_modmetadata_set);
+-    _bsd__stop_set_modmetadata_set = .;
+-
+-    _bsd__start_set_sysctl_set = .;
+-    *(_bsd_set_sysctl_set);
+-    _bsd__stop_set_sysctl_set = .;
+-
+-    _bsd__start_set_sysinit_set = .;
+-    *(_bsd_set_sysinit_*);
+-    _bsd__stop_set_sysinit_set = .;
+-
+-    bsp_section_rodata_end = .;
+-
++    KEEP (*(SORT(.rtemsroset.*)))
+   } =0x90909090
+ 
+   .init           :
+@@ -113,6 +99,22 @@
+   PROVIDE (etext = .);
+   .rodata         : { *(.rodata .rodata.* .gnu.linkonce.r.*) }
+   .rodata1        : { *(.rodata1) }
++  .tdata : {
++    _TLS_Data_begin = .;
++    *(.tdata .tdata.* .gnu.linkonce.td.*)
++    _TLS_Data_end = .;
++  }
++  .tbss : {
++    _TLS_BSS_begin = .;
++    *(.tbss .tbss.* .gnu.linkonce.tb.*) *(.tcommon)
++    _TLS_BSS_end = .;
++  }
++  _TLS_Data_size = _TLS_Data_end - _TLS_Data_begin;
++  _TLS_Data_begin = _TLS_Data_size != 0 ? _TLS_Data_begin : _TLS_BSS_begin;
++  _TLS_Data_end = _TLS_Data_size != 0 ? _TLS_Data_end : _TLS_BSS_begin;
++  _TLS_BSS_size = _TLS_BSS_end - _TLS_BSS_begin;
++  _TLS_Size = _TLS_BSS_end - _TLS_Data_begin;
++  _TLS_Alignment = MAX (ALIGNOF (.tdata), ALIGNOF (.tbss));
+   .eh_frame_hdr : { *(.eh_frame_hdr) }
+   .eh_frame       : ONLY_IF_RO { KEEP (*(.eh_frame)) }
+   .gcc_except_table   : ONLY_IF_RO { *(.gcc_except_table .gcc_except_table.*) }
+@@ -187,6 +189,7 @@
+     SORT(CONSTRUCTORS)
+   }
+   .data1          : { *(.data1) }
++  .rtemsrwset     : { KEEP (*(SORT(.rtemsrwset.*))) }
+   _edata = .; PROVIDE (edata = .);
+   __bss_start = .;
+   .bss            :

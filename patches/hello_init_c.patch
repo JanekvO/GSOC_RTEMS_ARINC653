@@ -1,0 +1,237 @@
+--- ./init_clean.c	2014-08-15 01:50:38.967108000 +0200
++++ ./init.c	2014-08-15 19:38:23.686909000 +0200
+@@ -11,15 +11,47 @@
+ #include "config.h"
+ #endif
+ 
++#define POK_NEEDS_ARINC653_PARTITION 1
++#define POK_NEEDS_ARINC653_PROCESS 1
++#define POK_NEEDS_ARINC653_TIME 1
++#define POK_NEEDS_ARINC653_ERROR 1
++#define POK_NEEDS_ARINC653_BLACKBOARD 1
++#define POK_NEEDS_ARINC653_BUFFER 1
++#define POK_NEEDS_ARINC653_EVENT 1
++#define POK_NEEDS_ARINC653_SEMAPHORE 1
++#define POK_NEEDS_ARINC653_SAMPLING 1
++#define POK_NEEDS_ARINC653_QUEUEING 1
++
+ #include <rtems/test.h>
+ 
+ #include <bsp.h> /* for device driver prototypes */
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <arinc653/types.h>
++#include <arinc653/partition.h>
++#include <arinc653/process.h>
++#include <arinc653/time.h>
++#include <arinc653/error.h>
++#include <arinc653/blackboard.h>
++#include <arinc653/buffer.h>
++#include <arinc653/event.h>
++#include <arinc653/semaphore.h>
++#include <arinc653/sampling.h>
++#include <arinc653/queueing.h>
+ 
+ /* forward declarations to avoid warnings */
+ rtems_task Init(rtems_task_argument argument);
++void arinc653_test_partition(void);
++void arinc653_test_process(void);
++void arinc653_test_time(void);
++void arinc653_test_error(void);
++void arinc653_test_blackboard(void);
++void arinc653_test_buffer(void);
++void arinc653_test_event(void);
++void arinc653_test_semaphore(void);
++void arinc653_test_sampling(void);
++void arinc653_test_queueing(void);
+ 
+ const char rtems_test_name[] = "HELLO WORLD";
+ 
+@@ -27,12 +59,182 @@
+   rtems_task_argument ignored
+ )
+ {
+-  rtems_test_begin();
+-  printf( "Hello World\n" );
+-  rtems_test_end();
+-  exit( 0 );
++	arinc653_test_partition();
++	arinc653_test_process();
++	arinc653_test_time();
++	arinc653_test_error();
++	arinc653_test_blackboard();
++	arinc653_test_buffer();
++	arinc653_test_event();
++	arinc653_test_semaphore();
++	arinc653_test_sampling();
++	arinc653_test_queueing();
++	exit( 0 );
++}
++
++void arinc653_test_partition()
++{
++	printf("arinc653_test_partition start\n");
++	PARTITION_STATUS_TYPE 	partition_status;
++	RETURN_CODE_TYPE 		ret;
++
++	GET_PARTITION_STATUS(&partition_status, &ret);
++	
++	printf("OPERATING_MODE_TYPE after GET_PARTITION_STATUS: %d\n", (int)partition_status.OPERATING_MODE);
++	printf("Return after GET_PARTITION_STATUS: %d\n", (int)ret);
++	printf("arinc653_test_partition stop\n\n");
++}
++
++void arinc653_test_process()
++{
++	printf("arinc653_test_process start\n");
++	PROCESS_ID_TYPE 	PROCESS_ID;
++	RETURN_CODE_TYPE 	RETURN_CODE;
++
++	GET_MY_ID (
++      /*out*/ &PROCESS_ID,
++      /*out*/ &RETURN_CODE );
++      
++    printf("PROCESS_ID after GET_MY_ID: %d\n", (int)PROCESS_ID);  
++	printf("RETURN_CODE after GET_MY_ID: %d\n", (int)RETURN_CODE);
++	printf("arinc653_test_process stop\n\n");
++}
++      
++void arinc653_test_time()
++{
++	printf("arinc653_test_time start\n");
++	RETURN_CODE_TYPE return_code;
++      
++    PERIODIC_WAIT (
++      /*out*/ &return_code );
++       
++	printf("return_code after PERIODIC_WAIT: %d\n", (int)return_code);
++	printf("arinc653_test_time stop\n\n");
++}
++
++void arinc653_test_error()
++{
++	printf("arinc653_test_error start\n");
++	ERROR_STATUS_TYPE 	ERROR_STATUS;
++	RETURN_CODE_TYPE  	RETURN_CODE;
++	
++	GET_ERROR_STATUS (&ERROR_STATUS,
++                      &RETURN_CODE);
++      
++    printf("ERROR_STATUS.ERROR_CODE after GET_ERROR_STATUS: %d\n", (int)ERROR_STATUS.ERROR_CODE);  
++	printf("RETURN_CODE after GET_ERROR_STATUS: %d\n", (int)RETURN_CODE);
++	printf("arinc653_test_error stop\n\n");
++}
++
++void arinc653_test_blackboard()
++{
++	printf("arinc653_test_blackboard start\n");
++	BLACKBOARD_ID_TYPE  BLACKBOARD_ID;
++	RETURN_CODE_TYPE  	RETURN_CODE;
++	
++	CREATE_BLACKBOARD ( 
++       /*in */ "RTEMS_arinc_blackboard", 
++       /*in */ 5, 
++       /*out*/ &BLACKBOARD_ID, 
++       /*out*/ &RETURN_CODE ); 
++      
++    printf("BLACKBOARD_ID after CREATE_BLACKBOARD: %d\n", (int)BLACKBOARD_ID);  
++	printf("RETURN_CODE after CREATE_BLACKBOARD: %d\n", (int)RETURN_CODE);
++	printf("arinc653_test_blackboard stop\n\n");
+ }
+ 
++void arinc653_test_buffer()
++{
++	printf("arinc653_test_buffer start\n");
++	BUFFER_ID_TYPE      BUFFER_ID;
++	RETURN_CODE_TYPE  	RETURN_CODE;
++	
++	CREATE_BUFFER ( 
++       /*in */ "RTEMS_arinc_buffer",
++       /*in */ 5,
++       /*in */ 4,
++       /*in */ FIFO,
++       /*out*/ &BUFFER_ID,
++       /*out*/ &RETURN_CODE );
++      
++    printf("BUFFER_ID after CREATE_BUFFER: %d\n", (int)BUFFER_ID);  
++	printf("RETURN_CODE after CREATE_BUFFER: %d\n", (int)RETURN_CODE);
++	printf("arinc653_test_buffer stop\n\n");
++}
++
++void arinc653_test_event()
++{
++	printf("arinc653_test_event start\n");
++	EVENT_ID_TYPE 		EVENT_ID;
++	RETURN_CODE_TYPE  	RETURN_CODE;
++	
++	CREATE_EVENT (
++      /*IN */ "RTEMS_arinc_event",
++      /*OUT*/ &EVENT_ID,
++      /*OUT*/ &RETURN_CODE );
++      
++    printf("EVENT_ID after CREATE_EVENT: %d\n", (int)EVENT_ID);  
++	printf("RETURN_CODE after CREATE_EVENT: %d\n", (int)RETURN_CODE);
++	printf("arinc653_test_event stop\n\n");
++}
++
++void arinc653_test_semaphore()
++{
++	printf("arinc653_test_semaphore start\n");
++	SEMAPHORE_ID_TYPE 	SEMAPHORE_ID;
++	RETURN_CODE_TYPE  	RETURN_CODE;
++	
++	CREATE_SEMAPHORE (
++      /*IN */ "RTEMS_arinc_sem",
++      /*IN */ 1,
++      /*IN */ 4,
++      /*IN */ FIFO,
++      /*OUT*/ &SEMAPHORE_ID,
++      /*OUT*/ &RETURN_CODE );
++      
++    printf("SEMAPHORE_ID after CREATE_SEMAPHORE: %d\n", (int)SEMAPHORE_ID);  
++	printf("RETURN_CODE after CREATE_SEMAPHORE: %d\n", (int)RETURN_CODE);
++	printf("arinc653_test_semaphore stop\n\n");
++}
++
++void arinc653_test_sampling()
++{
++	printf("arinc653_test_sampling start\n");
++	SAMPLING_PORT_ID_TYPE 	SAMPLING_PORT_ID;
++	RETURN_CODE_TYPE  		RETURN_CODE;
++	
++	CREATE_SAMPLING_PORT ( 
++       /*in */ "RTEMS_arinc_sampling", 
++       /*in */ 5, 
++       /*in */ SOURCE, 
++       /*in */ 5000, 
++       /*out*/ &SAMPLING_PORT_ID, 
++       /*out*/ &RETURN_CODE );
++      
++    printf("SAMPLING_PORT_ID after CREATE_SAMPLING_PORT: %d\n", (int)SAMPLING_PORT_ID);  
++	printf("RETURN_CODE after CREATE_SAMPLING_PORT: %d\n", (int)RETURN_CODE);
++	printf("arinc653_test_sampling stop\n\n");
++}
++
++void arinc653_test_queueing()
++{
++	printf("arinc653_test_queueing start\n");
++	QUEUING_PORT_ID_TYPE 	QUEUING_PORT_ID;
++	RETURN_CODE_TYPE  		RETURN_CODE;
++	
++	CREATE_QUEUING_PORT (
++      /*in */ "RTEMS_arinc_queueing",
++      /*in */ 5,
++      /*in */ 3,
++      /*in */ SOURCE,
++      /*in */ FIFO,
++      /*out*/ &QUEUING_PORT_ID,
++      /*out*/ &RETURN_CODE );
++      
++    printf("QUEUING_PORT_ID after CREATE_QUEUING_PORT: %d\n", (int)QUEUING_PORT_ID);  
++	printf("RETURN_CODE after CREATE_QUEUING_PORT: %d\n", (int)RETURN_CODE);
++	printf("arinc653_test_queueing stop\n\n");
++}
+ 
+ /* NOTICE: the clock driver is explicitly disabled */
+ #define CONFIGURE_APPLICATION_DOES_NOT_NEED_CLOCK_DRIVER

@@ -1,0 +1,68 @@
+Guide to get POK's arinc653 calls working on RTEMS.
+
+This guide will go through the steps that are necessary to get arinc653 calls
+from POK working on an RTEMS partition and to be able to run an example project
+that goes through at least one arinc653 call of each arinc653 subset (buffer, 
+blackboard, partition, time etc.). As this guide won't go into detail 
+please refer to either the arinc653 wiki on RTEMS wiki 
+(http://www.rtems.org/wiki/index.php/Main_Page) or to justjnk.blogspot.nl for
+more details.
+
+Note: Make sure your environment can at least run the default "hello world" for 
+RTEMS on POK (i.e. the patches for virtualpok are applied to your RTEMS 
+directory).
+
+1. Apply the patches that can be retrieved from 
+https://github.com/JustJanek/GSOC_RTEMS_ARINC653/patches/ 
+
+- virtualpok_arinc653.patch is to be applied to $RTEMS/c/src/lib/libbsp/i386/virtualpok/
+- hello_init_c.patch is to be applied to $RTEMS/testsuites/samples/hello/init.c
+- libpok_rtems_arinc653.patch is to be applied to $POK/libpok
+- rtems-guest_rtems_arinc653.patch is to be applied to $POK/examples/rtems-guest
+
+2. Go to $POK/examples/rtems-guest and use the command 'make'. A new folder 
+named generated-code/ should either be added (if it wasn't there yet). Add the
+following macros to $POK/examples/rtems-guest/generated-code/cpu/part1/deployment.h
+
+#define POK_CONFIG_NB_BLACKBOARDS 2
+#define POK_CONFIG_NB_BUFFERS 2
+#define POK_CONFIG_ARINC653_NB_SEMAPHORES 2
+#define POK_CONFIG_NB_EVENTS 2
+#define POK_CONFIG_ARINC653_NB_EVENTS 2
+#define POK_NEEDS_BLACKBOARDS 1
+#define POK_NEEDS_ARINC653_BLACKBOARD 1
+#define POK_NEEDS_BUFFER 1
+#define POK_NEEDS_ARINC653_BUFFER 1
+#define POK_NEEDS_ARINC653_EVENT 1
+#define POK_NEEDS_ARINC653_ERROR 1
+#define POK_NEEDS_ARINC653_QUEUEING 1
+#define POK_NEEDS_ARINC653_SAMPLING 1
+#define POK_NEEDS_ARINC653_SEMAPHORE 1
+
+3. Go to $POK/examples/rtems-guest/generated-code and run the command 'make all'
+
+4. Copy-paste $POK/examples/rtems-guest/generated-code/cpu/part1/libpart.a to
+$RTEMS/c/src/lib/libbsp/i386/virtualpok. 
+
+5. Build RTEMS with the following configuration line:
+
+--target=i386-rtems4.11 --enable-rtemsbsp=virtualpok --enable-paravirt 
+--disable-cxx --disable-networking --disable-posix --enable-maintainter-mode 
+--enable-tests --disable-multiprocessing USE_COM1_AS_CONSOLE=1 
+BSP_PRESS_KEY_FOR_RESET=0
+
+For example: 
+mkdir pc386_arinc653
+cd pc386_arinc653
+$RTEMS/configure --target=i386-rtems4.11 --enable-rtemsbsp=virtualpok 
+	--enable-paravirt --disable-cxx --disable-networking --disable-posix 
+	--enable-maintainter-mode --enable-tests --disable-multiprocessing 
+	USE_COM1_AS_CONSOLE=1 BSP_PRESS_KEY_FOR_RESET=0
+
+6. Copy-paste <build_dir>/i386-rtems4.11/c/virtualpok/testsuites/samples/hello/hello.exe
+to $POK/examples/rtems-guest
+
+7. go to $POK/examples/rtems-guest and run "./copy_rebuild_kernel.sh hello.exe"
+
+8. If everything went well you can now run "make run" in $POK/examples/rtems-guest
+and the arinc653 calls example will run.

@@ -7,6 +7,19 @@ RTEMS is running virtualized on POK).
 
 The folders in POK/* are basically code and/or changes concerning POK whilst 
 the folder RTEMS/* is the folder with the changes on and for RTEMS.
+The folder patches/* have patches that are about using arinc653 in RTEMS (using
+POK's arinc653 implementation). The current status of the arinc653 calls is as
+follows:
 
-# TODO
-- Get a seperate project folder for my changes on rtems. I have used the example hello project thus far but making a seperate project.
+Arinc653 subset			Works?
+
+partition:				yes
+blackboard:				no
+buffer:					no
+error:					yes
+event:					no
+process:				yes
+queueing:				no
+sampling:				no
+semaphore:				no
+time: 					yes
